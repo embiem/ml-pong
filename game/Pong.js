@@ -19,7 +19,7 @@ const PADDLE_START_POS_RIGHT = { x: 780, y: 350 };
 const BALL_RADIUS = 10;
 const BALL_START_POS = { x: 400, y: 350 };
 
-const PADDLE_SPEED = 0.5;
+const PADDLE_SPEED = 0.3;
 const BALL_START_SPEED = 1;
 const BALL_SPEED_GAIN = 0.1;
 
@@ -32,6 +32,11 @@ const BALL_X_CHECK_RIGHT =
   PADDLE_START_POS_RIGHT.x - PADDLE_WIDTH / 2 + BALL_RADIUS;
 const BALL_Y_CHECK_TOP = BALL_RADIUS;
 const BALL_Y_CHECK_BOTTOM = GAME_HEIGHT - BALL_RADIUS;
+
+console.log("BALL_X_CHECK_LEFT", BALL_X_CHECK_LEFT);
+console.log("BALL_X_CHECK_RIGHT", BALL_X_CHECK_RIGHT);
+console.log("BALL_Y_CHECK_TOP", BALL_Y_CHECK_TOP);
+console.log("BALL_Y_CHECK_BOTTOM", BALL_Y_CHECK_BOTTOM);
 
 const StyledContainer = styled.div`
   position: relative;
@@ -64,7 +69,7 @@ export default function Pong() {
     ball: {
       ...BALL_START_POS,
       xVel: BALL_START_SPEED,
-      yVel: 0
+      yVel: (Math.random() - 0.5) * BALL_START_SPEED
     },
     score: {
       player: 0,
@@ -117,27 +122,33 @@ export default function Pong() {
     playerY = clamp(playerY, PADDLE_BOUNDS_MIN, PADDLE_BOUNDS_MAX);
     aiY = clamp(aiY, PADDLE_BOUNDS_MIN, PADDLE_BOUNDS_MAX);
 
-    // TODO Bounce Ball
-    if (
-      ballXVel > 0 &&
-      ballX >= BALL_X_CHECK_RIGHT &&
-      Math.abs(ballY - aiY) < PADDLE_HEIGHT / 2 + BALL_RADIUS
-    ) {
-      ballXVel = ballXVel * -1;
-    } else if (
-      ballXVel < 0 && 
-      ballX <= BALL_X_CHECK_LEFT &&
-      Math.abs(ballY - playerY) < PADDLE_HEIGHT / 2 + BALL_RADIUS
-    ) {
-      ballXVel = ballXVel * -1;
-    }
-
     // Move Ball
     ballX += ballXVel * BALL_START_SPEED;
     ballY += ballYVel * BALL_START_SPEED;
 
+    // Bounce Ball
+    if (
+      ballX >= BALL_X_CHECK_RIGHT &&
+      Math.abs(ballY - aiY) < PADDLE_HEIGHT / 2 + BALL_RADIUS
+    ) {
+      // Bounce right & speed up
+      ballXVel = (ballXVel + BALL_SPEED_GAIN) * -1;
+    } else if (
+      ballX <= BALL_X_CHECK_LEFT &&
+      Math.abs(ballY - playerY) < PADDLE_HEIGHT / 2 + BALL_RADIUS
+    ) {
+      // Bounce left & speed up
+      ballXVel = (ballXVel - BALL_SPEED_GAIN) * -1;
+    } else if (ballY <= BALL_Y_CHECK_TOP) {
+      // Bounce top
+      ballYVel *= -1;
+    } else if (ballY >= BALL_Y_CHECK_BOTTOM) {
+      // Bounce bottom
+      ballYVel *= -1;
+    }
+
     // Detect Win/Loss
-    if (ballX < BALL_X_CHECK_LEFT) {
+    if (ballXVel < 0 && ballX < BALL_X_CHECK_LEFT) {
       // Player lost
       aiScore++;
 
@@ -145,14 +156,16 @@ export default function Pong() {
       ballX = BALL_START_POS.x;
       ballY = BALL_START_POS.y;
       ballXVel = BALL_START_SPEED;
-    } else if (ballX > BALL_X_CHECK_RIGHT) {
+      ballYVel = (Math.random() - 0.5) * BALL_START_SPEED;
+    } else if (ballXVel > 0 && ballX > BALL_X_CHECK_RIGHT) {
       // AI lost
       playerScore++;
-
+      
       // Reset Ball
       ballX = BALL_START_POS.x;
       ballY = BALL_START_POS.y;
       ballXVel = BALL_START_SPEED * -1;
+      ballYVel = (Math.random() - 0.5) * BALL_START_SPEED;
     }
 
     // Set new game state
