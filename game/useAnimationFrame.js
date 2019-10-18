@@ -1,6 +1,6 @@
 import React from "react";
 
-const useAnimationFrame = callback => {
+const useAnimationFrame = (callback, deps = []) => {
   // Use useRef for mutable variables that we want to persist
   // without triggering a re-render on their change
   const requestRef = React.useRef();
@@ -18,7 +18,7 @@ const useAnimationFrame = callback => {
   React.useEffect(() => {
     requestRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(requestRef.current);
-  }, []); // Make sure the effect runs only once
+  }, deps); // Make sure the effect runs only once
 };
 
 export default useAnimationFrame;
