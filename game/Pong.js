@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import styled from "styled-components";
+import { DecisionTreeRegression as DTRegression } from "ml-cart";
 
 import Paddle from "./Paddle";
 import Ball from "./Ball";
@@ -35,11 +36,6 @@ const BALL_Y_CHECK_BOTTOM = GAME_HEIGHT - BALL_RADIUS;
 
 const TRAIN_DATA_PER_SECOND = 2;
 const TRAIN_DATA_TIME_SLICE = 1000 / TRAIN_DATA_PER_SECOND; // 1000ms = 1s
-
-console.log("BALL_X_CHECK_LEFT", BALL_X_CHECK_LEFT);
-console.log("BALL_X_CHECK_RIGHT", BALL_X_CHECK_RIGHT);
-console.log("BALL_Y_CHECK_TOP", BALL_Y_CHECK_TOP);
-console.log("BALL_Y_CHECK_BOTTOM", BALL_Y_CHECK_BOTTOM);
 
 const StyledContainer = styled.div`
   position: relative;
@@ -79,6 +75,23 @@ function downloadTrainData() {
   document.body.removeChild(element);
 }
 
+function trainModel() {
+  const x = [];
+  const y = [];
+  trainData.forEach(cur => {
+    x.push([cur.ballX, cur.ballY]);
+    y.push(cur.paddleY);
+  });
+
+  console.log(x)
+  console.log(y)
+
+  var reg = new DTRegression();
+  reg.train(x, y);
+
+  return reg;
+}
+
 function getRandomYVel() {
   return (
     (Math.random() + 0.2) * BALL_START_SPEED * (Math.random() > 0.5 ? 1 : -1)
@@ -97,6 +110,7 @@ export default function Pong() {
   const aiPaddle = useRef();
   const ball = useRef();
 
+  const trainedModel = useRef();
   const trainDataTimestep = useRef(0);
 
   const gameState = useRef({
@@ -158,6 +172,22 @@ export default function Pong() {
       }
       if (upPress.current) {
         playerY -= deltaTime * PADDLE_SPEED;
+      }
+
+      // Move AI Paddle if a model exists
+      if (trainedModel.current) {
+        const estimations = trainedModel.current.predict([
+          [ballX / GAME_WIDTH, ballY / GAME_HEIGHT]
+        ]);
+
+        // De-Normalize
+        const targetY = estimations[0] * GAME_HEIGHT;
+
+        if (targetY > aiY) {
+          aiY += deltaTime * PADDLE_SPEED;
+        } else if (targetY < aiY) {
+          aiY -= deltaTime * PADDLE_SPEED;
+        }
       }
 
       // Keep paddles in bounds
@@ -243,8 +273,14 @@ export default function Pong() {
           // Record new train data entry & Normalize before addiing
           trainDataTimestep.current -= TRAIN_DATA_TIME_SLICE;
 
+          const GAME_HALF = GAME_WIDTH / 2;
+          const unambiguousBallX =
+            ballX > GAME_HALF
+              ? lerp(GAME_HALF, 0, (ballX - GAME_HALF) / GAME_HALF)
+              : ballX;
+
           trainData.push({
-            ballX: ballX / GAME_WIDTH,
+            ballX: unambiguousBallX / GAME_HALF,
             ballY: ballY / GAME_HEIGHT,
             paddleY: playerY / GAME_HEIGHT
           });
@@ -266,6 +302,13 @@ export default function Pong() {
           onChange={() => setTrainMode(!trainMode)}
         ></input>
       </label>
+      <button
+        onClick={() => {
+          trainedModel.current = trainModel();
+        }}
+      >
+        Train Model
+      </button>
       <button onClick={downloadTrainData}>Download Train Data</button>
       <Scores player={scores.player} ai={scores.ai} />
       <StyledContainer>
