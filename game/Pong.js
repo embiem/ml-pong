@@ -1,6 +1,5 @@
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import styled from "styled-components";
-import { DecisionTreeRegression as DTRegression } from "ml-cart";
 
 import Paddle from "./Paddle";
 import Ball from "./Ball";
@@ -233,8 +232,6 @@ export default function Pong() {
         // Bounce off right paddle
         ballXVel = (ballXVel + BALL_SPEED_GAIN) * -1;
         if (ballXVel < -BALL_MAX_SPEED) ballXVel = -BALL_MAX_SPEED;
-
-        console.log("ballXVel", ballXVel);
 
         if (!trainMode) {
           ballYVel = lerp(
