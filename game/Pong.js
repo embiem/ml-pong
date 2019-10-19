@@ -9,8 +9,15 @@ import useKeyPress from "./useKeyPress";
 import useAnimationFrame from "./useAnimationFrame";
 import clamp from "./clamp";
 
-const GAME_WIDTH = 900;
-const GAME_HEIGHT = 700;
+import trainModel from "../ml/train";
+import {
+  getFeaturesAndTargets,
+  gameStateToDataEntry,
+  predictionToGameState
+} from "../ml/data";
+
+export const GAME_WIDTH = 900;
+export const GAME_HEIGHT = 700;
 
 const PADDLE_HEIGHT = 80;
 const PADDLE_WIDTH = 20;
@@ -55,8 +62,8 @@ let trainData = [];
 
 function downloadTrainData() {
   const text = trainData.reduce((prev, cur) => {
-    return `${prev}\n${cur.ballX},${cur.ballY},${cur.paddleY}`;
-  }, "ballX,ballY,paddleY");
+    return `${prev}\n${cur.ballX},${cur.ballY},${cur.playerY}`;
+  }, "ballX,ballY,playerY");
   var element = document.createElement("a");
   element.setAttribute(
     "href",
@@ -75,26 +82,37 @@ function downloadTrainData() {
   document.body.removeChild(element);
 }
 
-function trainModel() {
-  const x = [];
-  const y = [];
-  trainData.forEach(cur => {
-    x.push([cur.ballX, cur.ballY]);
-    y.push(cur.paddleY);
-  });
+function uploadTrainData(e) {
+  const fileName = e.target.files[0].name;
+  const fr = new FileReader();
+  fr.onload = function() {
+    const text = fr.result;
 
-  console.log(x)
-  console.log(y)
+    // parse csv & put into trainData
+    trainData = text.split("\n").reduce((data, line, idx) => {
+      if (idx === 0) return data; // skip initial line which includes the labels
 
-  var reg = new DTRegression();
-  reg.train(x, y);
+      const numbers = line.split(",").map(n => parseFloat(n));
 
-  return reg;
+      const newDataEntry = {
+        ballX: numbers[0],
+        ballY: numbers[1],
+        playerY: numbers[2]
+      };
+
+      return [...data, newDataEntry];
+    }, []);
+
+    console.info(
+      `File "${fileName}" successfully read. ${trainData.length} data entries loaded.`
+    );
+  };
+  fr.readAsText(e.target.files[0]);
 }
 
 function getRandomYVel() {
   return (
-    (Math.random() + 0.2) * BALL_START_SPEED * (Math.random() > 0.5 ? 1 : -1)
+    (Math.random() + 0.2) * (Math.random() > 0.5 ? 1 : -1)
   );
 }
 
@@ -177,7 +195,7 @@ export default function Pong() {
       // Move AI Paddle if a model exists
       if (trainedModel.current) {
         const estimations = trainedModel.current.predict([
-          [ballX / GAME_WIDTH, ballY / GAME_HEIGHT]
+          [(GAME_WIDTH - ballX) / GAME_WIDTH, ballY / GAME_HEIGHT]
         ]);
 
         // De-Normalize
@@ -270,20 +288,11 @@ export default function Pong() {
         trainDataTimestep.current += deltaTime;
 
         if (trainDataTimestep.current >= TRAIN_DATA_TIME_SLICE) {
-          // Record new train data entry & Normalize before addiing
           trainDataTimestep.current -= TRAIN_DATA_TIME_SLICE;
 
-          const GAME_HALF = GAME_WIDTH / 2;
-          const unambiguousBallX =
-            ballX > GAME_HALF
-              ? lerp(GAME_HALF, 0, (ballX - GAME_HALF) / GAME_HALF)
-              : ballX;
-
-          trainData.push({
-            ballX: unambiguousBallX / GAME_HALF,
-            ballY: ballY / GAME_HEIGHT,
-            paddleY: playerY / GAME_HEIGHT
-          });
+          // Record new train data entry
+          const dataEntry = gameStateToDataEntry(gameState);
+          trainData.push(dataEntry);
         }
       }
     },
@@ -304,12 +313,20 @@ export default function Pong() {
       </label>
       <button
         onClick={() => {
-          trainedModel.current = trainModel();
+          const { x, y } = getFeaturesAndTargets(trainData);
+          trainedModel.current = trainModel(x, y);
         }}
       >
         Train Model
       </button>
       <button onClick={downloadTrainData}>Download Train Data</button>
+      <input
+        type="file"
+        id="train-data"
+        name="train-data"
+        accept=".csv"
+        onChange={uploadTrainData}
+      ></input>
       <Scores player={scores.player} ai={scores.ai} />
       <StyledContainer>
         <Divider />
