@@ -43,8 +43,8 @@ const BALL_X_CHECK_RIGHT =
 const BALL_Y_CHECK_TOP = BALL_RADIUS;
 const BALL_Y_CHECK_BOTTOM = GAME_HEIGHT - BALL_RADIUS;
 
-const TRAIN_DATA_PER_SECOND = 2;
-const TRAIN_DATA_TIME_SLICE = 1000 / TRAIN_DATA_PER_SECOND; // 1000ms = 1s
+const TRAIN_DATA_TIME_SLICE = 500; // Record new train data entry every 500ms
+const PREDICT_DATA_TIME_SLICE = 200; // Make new prediction every 200ms
 
 const StyledContainer = styled.div`
   position: relative;
@@ -134,6 +134,8 @@ export default function Pong() {
 
   const trainedModel = useRef();
   const trainDataTimestep = useRef(0);
+  const predictDataTimestep = useRef(0);
+  const aiTargetY = useRef(PADDLE_START_POS_RIGHT.y);
 
   const gameState = useRef({
     player: {
@@ -197,15 +199,20 @@ export default function Pong() {
       }
 
       // Move AI Paddle if a model exists
-      if (trainedModel.current) {
-        const estimations = predictAIY(trainedModel.current, gameState);
+      if (trainedModel.current && !trainMode) {
+        predictDataTimestep.current += deltaTime;
+        
+        if (predictDataTimestep.current >= PREDICT_DATA_TIME_SLICE) {
+          predictDataTimestep.current -= PREDICT_DATA_TIME_SLICE;
+          
+          // New Prediction
+          const estimations = predictAIY(trainedModel.current, gameState);
+          aiTargetY.current = predictionToGameState(estimations[0])
+        }
 
-        // De-Normalize
-        const targetY = predictionToGameState(estimations[0]);
-
-        if (targetY > aiY) {
+        if (aiTargetY.current > aiY) {
           aiY += deltaTime * PADDLE_SPEED;
-        } else if (targetY < aiY) {
+        } else if (aiTargetY.current < aiY) {
           aiY -= deltaTime * PADDLE_SPEED;
         }
       }
