@@ -7,7 +7,7 @@ function trainDecisionTree(x, y) {
     minNumSamples: 3
   });
   dtRegModel.train(x, y);
-  
+
   console.info("Decision Tree trained!");
   return dtRegModel;
 }

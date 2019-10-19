@@ -9,12 +9,13 @@ import useKeyPress from "./useKeyPress";
 import useAnimationFrame from "./useAnimationFrame";
 import clamp from "./clamp";
 
-import trainModel from "../ml/train";
 import {
   getFeaturesAndTargets,
   gameStateToDataEntry,
   predictionToGameState
 } from "../ml/data";
+import trainModel from "../ml/train";
+import predictAIY from "../ml/predict";
 
 export const GAME_WIDTH = 900;
 export const GAME_HEIGHT = 700;
@@ -29,7 +30,8 @@ const BALL_START_POS = { x: 400, y: 350 };
 
 const PADDLE_SPEED = 0.3;
 const BALL_START_SPEED = 1.2;
-const BALL_SPEED_GAIN = 0;
+const BALL_SPEED_GAIN = 0.02;
+export const BALL_MAX_SPEED = 1.8;
 
 const PADDLE_BOUNDS_MIN = PADDLE_HEIGHT / 2;
 const PADDLE_BOUNDS_MAX = GAME_HEIGHT - PADDLE_HEIGHT / 2;
@@ -62,8 +64,8 @@ let trainData = [];
 
 function downloadTrainData() {
   const text = trainData.reduce((prev, cur) => {
-    return `${prev}\n${cur.ballX},${cur.ballY},${cur.playerY}`;
-  }, "ballX,ballY,playerY");
+    return `${prev}\n${cur.ballX},${cur.ballY},${cur.ballXVel},${cur.ballYVel},${cur.playerY}`;
+  }, "ballX,ballY,ballXVel,ballYVel,playerY");
   var element = document.createElement("a");
   element.setAttribute(
     "href",
@@ -94,10 +96,14 @@ function uploadTrainData(e) {
 
       const numbers = line.split(",").map(n => parseFloat(n));
 
+      if (numbers.length != 5) return data; // skip if line with corrupt data
+
       const newDataEntry = {
         ballX: numbers[0],
         ballY: numbers[1],
-        playerY: numbers[2]
+        ballXVel: numbers[2],
+        ballYVel: numbers[3],
+        playerY: numbers[4]
       };
 
       return [...data, newDataEntry];
@@ -111,9 +117,7 @@ function uploadTrainData(e) {
 }
 
 function getRandomYVel() {
-  return (
-    (Math.random() + 0.2) * (Math.random() > 0.5 ? 1 : -1)
-  );
+  return (Math.random() + 0.2) * (Math.random() > 0.5 ? 1 : -1);
 }
 
 function lerp(v0, v1, t) {
@@ -194,12 +198,10 @@ export default function Pong() {
 
       // Move AI Paddle if a model exists
       if (trainedModel.current) {
-        const estimations = trainedModel.current.predict([
-          [(GAME_WIDTH - ballX) / GAME_WIDTH, ballY / GAME_HEIGHT]
-        ]);
+        const estimations = predictAIY(trainedModel.current, gameState);
 
         // De-Normalize
-        const targetY = estimations[0] * GAME_HEIGHT;
+        const targetY = predictionToGameState(estimations[0]);
 
         if (targetY > aiY) {
           aiY += deltaTime * PADDLE_SPEED;
@@ -223,6 +225,10 @@ export default function Pong() {
       ) {
         // Bounce off right paddle
         ballXVel = (ballXVel + BALL_SPEED_GAIN) * -1;
+        if (ballXVel < -BALL_MAX_SPEED) ballXVel = -BALL_MAX_SPEED;
+
+        console.log("ballXVel", ballXVel);
+
         if (!trainMode) {
           ballYVel = lerp(
             BALL_START_SPEED,
@@ -236,6 +242,10 @@ export default function Pong() {
       ) {
         // Bounce off left paddle
         ballXVel = (ballXVel - BALL_SPEED_GAIN) * -1;
+        if (ballXVel > BALL_MAX_SPEED) ballXVel = BALL_MAX_SPEED;
+
+        console.log("ballXVel", ballXVel);
+
         ballYVel = lerp(
           BALL_START_SPEED,
           -BALL_START_SPEED,
@@ -275,8 +285,8 @@ export default function Pong() {
       gameState.current.ai.y = aiY;
       gameState.current.ball.x = ballX;
       gameState.current.ball.y = ballY;
-      gameState.current.ball.xVel = ballXVel;
-      gameState.current.ball.yVel = ballYVel;
+      gameState.current.ball.xVel = ballXVel + (Math.random() - 0.5) * 0.000000001;
+      gameState.current.ball.yVel = ballYVel + (Math.random() - 0.5) * 0.000000001;
       gameState.current.score.player = playerScore;
       gameState.current.score.ai = aiScore;
 
