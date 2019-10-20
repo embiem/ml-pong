@@ -31,7 +31,7 @@ const BALL_START_POS = { x: 400, y: 350 };
 const PADDLE_SPEED = 0.3;
 const BALL_START_SPEED = 1.2;
 const BALL_SPEED_GAIN = 0.02;
-export const BALL_MAX_SPEED = 1.8;
+export const BALL_MAX_SPEED = 2.0;
 
 const PADDLE_BOUNDS_MIN = PADDLE_HEIGHT / 2;
 const PADDLE_BOUNDS_MAX = GAME_HEIGHT - PADDLE_HEIGHT / 2;
