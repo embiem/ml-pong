@@ -1,19 +1,29 @@
-import Matrix from "ml-matrix";
 import { GAME_HEIGHT, GAME_WIDTH, BALL_MAX_SPEED } from "../game/Pong";
 
 export function gameStateToDataEntry(gameState) {
-  // Normalize and return the features we want to use for training, as well as the target variable (playerY)
+  const {
+    ball: { x: ballX, y: ballY, xVel: ballXVel, yVel: ballYVel }
+  } = gameState.current;
+
+  // TODO Normalize and return the features we want to use for training, as well as the target variable (playerY)
+
+  console.warn("predictionToGameState not implemented!");
+
   return {
-    ballX: gameState.current.ball.x / GAME_WIDTH,
-    ballY: gameState.current.ball.y / GAME_HEIGHT,
-    ballXVel: (gameState.current.ball.xVel + BALL_MAX_SPEED) / (2 * BALL_MAX_SPEED),
-    ballYVel: (gameState.current.ball.yVel + BALL_MAX_SPEED) / (2 * BALL_MAX_SPEED),
-    playerY: gameState.current.player.y / GAME_HEIGHT
+    ballX: 0,
+    ballY: 0,
+    ballXVel: 0,
+    ballYVel: 0,
+    playerY: 0
   };
 }
 
 export function predictionToGameState(prediction) {
-  return prediction * GAME_HEIGHT;
+  // TODO de-normalize the prediction and return the final value for the Y position of the AI's paddle
+
+  console.warn("predictionToGameState not implemented!");
+
+  return 0;
 }
 
 // Transform the training data into an array of features (x) & target variables (y)

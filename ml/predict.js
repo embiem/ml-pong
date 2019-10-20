@@ -1,33 +1,19 @@
 import * as tf from "@tensorflow/tfjs";
 import { GAME_HEIGHT, GAME_WIDTH, BALL_MAX_SPEED } from "../game/Pong";
+import {gameStateToDataEntry} from "./data";
 
 export default function predict(model, gameState) {
   const {
-    ball: { x: ballX, y: ballY, xVel: ballXVel, yVel: ballYVel }
-  } = gameState.current;
+    ballX,
+    ballY,
+    ballXVel,
+    ballYVel,
+    playerY
+  } = gameStateToDataEntry(gameState);
 
-  /* 
-  return model.predict([
-    [
-      (GAME_WIDTH - ballX) / GAME_WIDTH,
-      ballY / GAME_HEIGHT,
-      (ballXVel + BALL_MAX_SPEED) / (2 * BALL_MAX_SPEED),
-      (ballYVel + BALL_MAX_SPEED) / (2 * BALL_MAX_SPEED)
-    ]
-  ]); */
+  // TODO use `model.predict` with the game's state as input
 
-  const result = model
-    .predict(
-      tf.tensor2d([
-        [
-          (GAME_WIDTH - ballX) / GAME_WIDTH,
-          ballY / GAME_HEIGHT,
-          (ballXVel + BALL_MAX_SPEED) / (2 * BALL_MAX_SPEED),
-          (ballYVel + BALL_MAX_SPEED) / (2 * BALL_MAX_SPEED)
-        ]
-      ])
-    )
-    .dataSync();
+  console.warn("predict not implemented!")
 
-  return result;
+  return 0;
 }
