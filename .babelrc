@@ -3,7 +3,7 @@
     [
       "env",
       {
-        "esmodules": false,
+        "modules": false,
         "targets": {
           "browsers": [
             "> 3%"
