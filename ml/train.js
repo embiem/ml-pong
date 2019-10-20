@@ -3,7 +3,7 @@ import { DecisionTreeRegression as DTRegression } from "ml-cart";
 function trainDecisionTree(x, y) {
   // TODO create a new DTRegression model and train it on the features (x) and targets (y)
 
-  console.warn("Decision Tree not trained!")
+  console.warn("trainDecisionTree not implemented!")
 
   return null;
 }

@@ -7,7 +7,7 @@ export function gameStateToDataEntry(gameState) {
 
   // TODO Normalize and return the features we want to use for training, as well as the target variable (playerY)
 
-  console.warn("predictionToGameState not implemented!");
+  console.warn("gameStateToDataEntry not implemented!");
 
   return {
     ballX: 0,
