@@ -3,7 +3,7 @@ import { RandomForestRegression as RFRegression } from "ml-random-forest";
 
 function trainDecisionTree(x, y) {
   const dtRegModel = new DTRegression({
-    maxDepth: Infinity,
+    maxDepth: 6,
     minNumSamples: 3
   });
   dtRegModel.train(x, y);

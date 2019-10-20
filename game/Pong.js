@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef } from "react";
 import styled from "styled-components";
+import * as tf from '@tensorflow/tfjs';
 
 import Paddle from "./Paddle";
 import Ball from "./Ball";
@@ -43,7 +44,7 @@ const BALL_Y_CHECK_TOP = BALL_RADIUS;
 const BALL_Y_CHECK_BOTTOM = GAME_HEIGHT - BALL_RADIUS;
 
 const TRAIN_DATA_TIME_SLICE = 500; // Record new train data entry every 500ms
-const PREDICT_DATA_TIME_SLICE = 200; // Make new prediction every 200ms
+const PREDICT_DATA_TIME_SLICE = 50; // Make new prediction every 200ms
 
 const StyledContainer = styled.div`
   position: relative;
@@ -160,6 +161,29 @@ export default function Pong() {
   downPress.current = useKeyPress("ArrowDown");
   upPress.current = useKeyPress("ArrowUp");
 
+  const uploadTFModel = e => {
+    const fr = new FileReader();
+    fr.onload = async function() {
+      const text = fr.result;
+
+      var data = JSON.parse(text);
+      Object.keys(data).forEach(function(k) {
+        localStorage.setItem(k, data[k]);
+        console.info(`Key "${k}" successfully imported to localStorage.`);
+      });
+
+      trainedModel.current = await tf.loadLayersModel(
+        //"localstorage://simpleNN-lr-model"
+        //"localstorage://1hiddenNN-lr-model"
+        "localstorage://2hiddenNN-lr-model"
+      );
+
+      console.info(`simpleNN-lr-model successfully loaded.`);
+    };
+
+    fr.readAsText(e.target.files[0]);
+  };
+
   const draw = () => {
     playerPaddle.current.style.setProperty(
       "--x",
@@ -200,13 +224,13 @@ export default function Pong() {
       // Move AI Paddle if a model exists
       if (trainedModel.current && !trainMode) {
         predictDataTimestep.current += deltaTime;
-        
+
         if (predictDataTimestep.current >= PREDICT_DATA_TIME_SLICE) {
           predictDataTimestep.current -= PREDICT_DATA_TIME_SLICE;
-          
+
           // New Prediction
           const estimations = predictAIY(trainedModel.current, gameState);
-          aiTargetY.current = predictionToGameState(estimations[0])
+          aiTargetY.current = predictionToGameState(estimations[0]);
         }
 
         if (aiTargetY.current > aiY) {
@@ -289,8 +313,10 @@ export default function Pong() {
       gameState.current.ai.y = aiY;
       gameState.current.ball.x = ballX;
       gameState.current.ball.y = ballY;
-      gameState.current.ball.xVel = ballXVel + (Math.random() - 0.5) * 0.000000001;
-      gameState.current.ball.yVel = ballYVel + (Math.random() - 0.5) * 0.000000001;
+      gameState.current.ball.xVel =
+        ballXVel + (Math.random() - 0.5) * 0.000000001;
+      gameState.current.ball.yVel =
+        ballYVel + (Math.random() - 0.5) * 0.000000001;
       gameState.current.score.player = playerScore;
       gameState.current.score.ai = aiScore;
 
@@ -317,30 +343,42 @@ export default function Pong() {
 
   return (
     <>
-      <label>
-        Train Mode
+      <div>
         <input
-          type="checkbox"
-          checked={trainMode}
-          onChange={() => setTrainMode(!trainMode)}
+          type="file"
+          id="train-data"
+          name="train-data"
+          accept=".csv"
+          onChange={uploadTrainData}
         ></input>
-      </label>
-      <button
-        onClick={() => {
-          const { x, y } = getFeaturesAndTargets(trainData);
-          trainedModel.current = trainModel(x, y);
-        }}
-      >
-        Train Model
-      </button>
-      <button onClick={downloadTrainData}>Download Train Data</button>
-      <input
-        type="file"
-        id="train-data"
-        name="train-data"
-        accept=".csv"
-        onChange={uploadTrainData}
-      ></input>
+        <input
+          type="file"
+          id="tf-model"
+          name="tf-model"
+          accept=".json"
+          onChange={uploadTFModel}
+        ></input>
+      </div>
+      <div>
+        <label>
+          Train Mode
+          <input
+            type="checkbox"
+            checked={trainMode}
+            onChange={() => setTrainMode(!trainMode)}
+          ></input>
+        </label>
+        <button
+          onClick={() => {
+            const { x, y } = getFeaturesAndTargets(trainData);
+            trainedModel.current = trainModel(x, y);
+          }}
+        >
+          Train Model
+        </button>
+        <button onClick={downloadTrainData}>Download Train Data</button>
+      </div>
+
       <Scores player={scores.player} ai={scores.ai} />
       <StyledContainer>
         <Divider />
