@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from "react";
 import styled from "styled-components";
-import * as tf from '@tensorflow/tfjs';
+import * as tf from "@tensorflow/tfjs";
 
 import Paddle from "./Paddle";
 import Ball from "./Ball";
@@ -43,7 +43,7 @@ const BALL_X_CHECK_RIGHT =
 const BALL_Y_CHECK_TOP = BALL_RADIUS;
 const BALL_Y_CHECK_BOTTOM = GAME_HEIGHT - BALL_RADIUS;
 
-const TRAIN_DATA_TIME_SLICE = 500; // Record new train data entry every 500ms
+const TRAIN_DATA_TIME_SLICE = 100; // Record new train data entry every 500ms
 const PREDICT_DATA_TIME_SLICE = 50; // Make new prediction every 200ms
 
 const StyledContainer = styled.div`
@@ -127,6 +127,7 @@ function lerp(v0, v1, t) {
 export default function Pong() {
   const [scores, setScores] = useState({ player: 0, ai: 0 });
   const [trainMode, setTrainMode] = useState(false);
+  const [onlyCaptureOnSpacePress, setOnlyCaptureOnSpacePress] = useState(false);
 
   const playerPaddle = useRef();
   const aiPaddle = useRef();
@@ -158,8 +159,10 @@ export default function Pong() {
   // Input Detection
   const downPress = useRef();
   const upPress = useRef();
+  const spacePress = useRef();
   downPress.current = useKeyPress("ArrowDown");
   upPress.current = useKeyPress("ArrowUp");
+  spacePress.current = useKeyPress(" ");
 
   const uploadTFModel = e => {
     const fr = new FileReader();
@@ -272,8 +275,6 @@ export default function Pong() {
         ballXVel = (ballXVel - BALL_SPEED_GAIN) * -1;
         if (ballXVel > BALL_MAX_SPEED) ballXVel = BALL_MAX_SPEED;
 
-        console.log("ballXVel", ballXVel);
-
         ballYVel = lerp(
           BALL_START_SPEED,
           -BALL_START_SPEED,
@@ -331,34 +332,45 @@ export default function Pong() {
           trainDataTimestep.current -= TRAIN_DATA_TIME_SLICE;
 
           // Record new train data entry
-          const dataEntry = gameStateToDataEntry(gameState);
-          trainData.push(dataEntry);
+          if (!onlyCaptureOnSpacePress || spacePress.current) {
+            const dataEntry = gameStateToDataEntry(gameState);
+            trainData.push(dataEntry);
+          }
         }
       }
     },
-    [trainMode]
+    [trainMode, onlyCaptureOnSpacePress]
   );
 
-  useAnimationFrame(gameLoop, [trainMode]);
+  useAnimationFrame(gameLoop, [trainMode, onlyCaptureOnSpacePress]);
 
   return (
     <>
       <div>
-        <input
-          type="file"
-          id="train-data"
-          name="train-data"
-          accept=".csv"
-          onChange={uploadTrainData}
-        ></input>
-        <input
-          type="file"
-          id="tf-model"
-          name="tf-model"
-          accept=".json"
-          onChange={uploadTFModel}
-        ></input>
+        <label htmlFor="train-data">
+          Upload trainData:{" "}
+          <input
+            type="file"
+            id="train-data"
+            name="train-data"
+            accept=".csv"
+            onChange={uploadTrainData}
+          ></input>
+        </label>
+        <label htmlFor="tf-model">
+          Upload TF Models (localstorage.json):{" "}
+          <input
+            type="file"
+            id="tf-model"
+            name="tf-model"
+            accept=".json"
+            onChange={uploadTFModel}
+          ></input>
+        </label>
       </div>
+
+      <div style={{ height: "1rem" }}></div>
+
       <div>
         <label>
           Train Mode
@@ -366,6 +378,14 @@ export default function Pong() {
             type="checkbox"
             checked={trainMode}
             onChange={() => setTrainMode(!trainMode)}
+          ></input>
+        </label>
+        <label>
+          Capture On Space-Press
+          <input
+            type="checkbox"
+            checked={onlyCaptureOnSpacePress}
+            onChange={() => setOnlyCaptureOnSpacePress(!onlyCaptureOnSpacePress)}
           ></input>
         </label>
         <button
@@ -378,6 +398,8 @@ export default function Pong() {
         </button>
         <button onClick={downloadTrainData}>Download Train Data</button>
       </div>
+
+      <div style={{ height: "1rem" }}></div>
 
       <Scores player={scores.player} ai={scores.ai} />
       <StyledContainer>
