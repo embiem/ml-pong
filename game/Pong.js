@@ -17,8 +17,8 @@ import {
 import trainModel from "../ml/train";
 import predictAIY from "../ml/predict";
 
-export const GAME_WIDTH = 900;
-export const GAME_HEIGHT = 700;
+export const GAME_WIDTH = 800;
+export const GAME_HEIGHT = 600;
 
 const PADDLE_HEIGHT = 80;
 const PADDLE_WIDTH = 20;
@@ -28,10 +28,10 @@ const PADDLE_START_POS_RIGHT = { x: GAME_WIDTH - 20, y: 350 };
 const BALL_RADIUS = 10;
 const BALL_START_POS = { x: 400, y: 350 };
 
-const PADDLE_SPEED = 0.3;
-const BALL_START_SPEED = 1.2;
+const PADDLE_SPEED = 0.28;
+const BALL_START_SPEED = 0.5;
 const BALL_SPEED_GAIN = 0.02;
-export const BALL_MAX_SPEED = 2.0;
+export const BALL_MAX_SPEED = 0.8;
 
 const PADDLE_BOUNDS_MIN = PADDLE_HEIGHT / 2;
 const PADDLE_BOUNDS_MAX = GAME_HEIGHT - PADDLE_HEIGHT / 2;
@@ -45,6 +45,12 @@ const BALL_Y_CHECK_BOTTOM = GAME_HEIGHT - BALL_RADIUS;
 
 const TRAIN_DATA_TIME_SLICE = 100; // Record new train data entry every 500ms
 const PREDICT_DATA_TIME_SLICE = 50; // Make new prediction every 200ms
+
+const FlexContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
 
 const StyledContainer = styled.div`
   position: relative;
@@ -117,7 +123,7 @@ function uploadTrainData(e) {
 }
 
 function getRandomYVel() {
-  return (Math.random() + 0.2) * (Math.random() > 0.5 ? 1 : -1);
+  return Math.random() * 0.25 * (Math.random() > 0.5 ? 1 : -1);
 }
 
 function lerp(v0, v1, t) {
@@ -248,8 +254,8 @@ export default function Pong() {
       aiY = clamp(aiY, PADDLE_BOUNDS_MIN, PADDLE_BOUNDS_MAX);
 
       // Move Ball
-      ballX += ballXVel * BALL_START_SPEED;
-      ballY += ballYVel * BALL_START_SPEED;
+      ballX += ballXVel * BALL_START_SPEED * deltaTime;
+      ballY += ballYVel * BALL_START_SPEED * deltaTime;
 
       // Bounce Ball
       if (
@@ -346,7 +352,7 @@ export default function Pong() {
 
   return (
     <>
-      <div>
+      <FlexContainer>
         <label htmlFor="train-data">
           Upload trainData:{" "}
           <input
@@ -367,11 +373,11 @@ export default function Pong() {
             onChange={uploadTFModel}
           ></input>
         </label>
-      </div>
+      </FlexContainer>
 
       <div style={{ height: "1rem" }}></div>
 
-      <div>
+      <FlexContainer>
         <label>
           Train Mode
           <input
@@ -385,7 +391,9 @@ export default function Pong() {
           <input
             type="checkbox"
             checked={onlyCaptureOnSpacePress}
-            onChange={() => setOnlyCaptureOnSpacePress(!onlyCaptureOnSpacePress)}
+            onChange={() =>
+              setOnlyCaptureOnSpacePress(!onlyCaptureOnSpacePress)
+            }
           ></input>
         </label>
         <button
@@ -397,7 +405,7 @@ export default function Pong() {
           Train Model
         </button>
         <button onClick={downloadTrainData}>Download Train Data</button>
-      </div>
+      </FlexContainer>
 
       <div style={{ height: "1rem" }}></div>
 
