@@ -2,12 +2,13 @@ import { GAME_HEIGHT, GAME_WIDTH, BALL_MAX_SPEED } from "../game/Pong";
 
 export function gameStateToDataEntry(gameState) {
   const {
-    ball: { x: ballX, y: ballY, xVel: ballXVel, yVel: ballYVel }
+    ball: { x: ballX, y: ballY, xVel: ballXVel, yVel: ballYVel },
+    player: { y: playerY }
   } = gameState.current;
 
   // TODO Normalize and return the features we want to use for training, as well as the target variable (playerY)
 
-  console.warn("gameStateToDataEntry not implemented!");
+  console.warn("gameStateToDataEntry not normalized!");
 
   return {
     ballX: 0,
