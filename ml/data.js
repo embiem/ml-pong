@@ -2,13 +2,18 @@ import Matrix from "ml-matrix";
 import { GAME_HEIGHT, GAME_WIDTH, BALL_MAX_SPEED } from "../game/Pong";
 
 export function gameStateToDataEntry(gameState) {
+  const {
+    ball: { x: ballX, y: ballY, xVel: ballXVel, yVel: ballYVel },
+    player: { y: playerY }
+  } = gameState.current;
+
   // Normalize and return the features we want to use for training, as well as the target variable (playerY)
   return {
-    ballX: gameState.current.ball.x / GAME_WIDTH,
-    ballY: gameState.current.ball.y / GAME_HEIGHT,
-    ballXVel: (gameState.current.ball.xVel + BALL_MAX_SPEED) / (2 * BALL_MAX_SPEED),
-    ballYVel: (gameState.current.ball.yVel + BALL_MAX_SPEED) / (2 * BALL_MAX_SPEED),
-    playerY: gameState.current.player.y / GAME_HEIGHT
+    ballX: ballX / GAME_WIDTH,
+    ballY: ballY / GAME_HEIGHT,
+    ballXVel: (ballXVel + BALL_MAX_SPEED) / (2 * BALL_MAX_SPEED),
+    ballYVel: (ballYVel + BALL_MAX_SPEED) / (2 * BALL_MAX_SPEED),
+    playerY: playerY / GAME_HEIGHT
   };
 }
 
