@@ -10,7 +10,7 @@ export default function predict(model, gameState) {
   const normalizedFeatures = [
     (GAME_WIDTH - gameState.current.ball.x) / GAME_WIDTH,
     ballY,
-    ballXVel,
+    1 - ballXVel,
     ballYVel
   ];
 
